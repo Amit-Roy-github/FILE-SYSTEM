@@ -75,9 +75,31 @@ public:
 			{
 				cout << entry.first << ' ' ;
 			}
-			cout << endl
+			cout << endl ;
+		}
+		catch ( std ::  exception & e ) {
+			std :: cerr << e.what() << endl ;
 		}
 	}
 
+	// Create a new Empty File
+
+	void touch( const std :: string & fileName ) {
+
+		try {
+			if ( fileName.empty() )
+				throw "File Name is empty" ;
+
+			if ( currentDirectory->children.find(fileName) != currentDirectory->children.end() )
+				throw "File Already Exist" ;
+
+			Node * newFile = new Node(fileName , false ) ;
+			currentDirectory->children[fileName] = newFile ;
+		}
+		catch ( std :: exception & e )
+		{
+			std :: cerr << e.what() << endl ;
+		}
+	}
 
 };
