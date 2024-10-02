@@ -68,10 +68,6 @@ private:
 		return nullptr ;
 	}
 
-	// Node * findNode( const std :: string & name )
-	// {
-	// 	Node * tem
-	// }
 
 	Node * findDirectory( const string & path )
 	{
@@ -245,7 +241,7 @@ int main()
 
 	while (1) {
 
-		cout << "Current Directory : " << file.currentDirectory() << "$ " ;
+		cout << "C:" << file.currentDirectory() << "$ " ;
 
 		string command ;
 		getline( cin , command ) ;
