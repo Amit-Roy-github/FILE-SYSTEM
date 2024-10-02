@@ -15,7 +15,7 @@ private:
 
 		bool is_directory ;
 		std :: string name ;
-		std :: map< string , Node* > children ;
+		std :: map< std :: string , Node* > children ;
 
 		Node(const std :: string & name , bool isDir = false ) : name(name) , is_directory(isDir) {}
 	};
@@ -24,15 +24,15 @@ private:
 	Node * root ;
 	Node * current_directory ;
 
-	vector< string > splitPath( const string & path ) const
+	vector< std :: string > splitPath( const string & path ) const
 	{
 		if ( path.empty() ) return {} ;
 
-		std::vector<string> result ;
+		std :: vector< std :: string> result ;
 
-		size_t  start = 0 , end = 0 ;
+		std :: size_t  start = 0 , end = 0 ;
 
-		while ( (end = path.find('/' , start )  ) != string :: npos )
+		while ( (end = path.find('/' , start )  ) != std :: string :: npos )
 		{
 			result.push_back( path.substr( start , end - start  ) ) ;
 			start = end + 1 ;
@@ -69,13 +69,13 @@ private:
 		return nullptr ;
 	}
 
-	Node * findNode( const string & path )
+	Node * findNode( const std :: string & path )
 	{
 		if ( path.empty() || path.front() == '/' )
 			return nullptr ;
 
 		Node * current = current_directory ;
-		std::vector<string> components = splitPath( path ) ;
+		std :: vector< std :: string> components = splitPath( path ) ;
 
 		for ( auto & component : components )
 		{
@@ -95,9 +95,9 @@ private:
 		return current ;
 	}
 
-	Node * findDirectory( const string & path )
+	Node * findDirectory( const std :: string & path )
 	{
-		std::vector<std::string> components = splitPath(path)  ;
+		std :: vector< std :: string> components = splitPath(path)  ;
 
 		Node * current = current_directory ;
 
@@ -150,14 +150,17 @@ private:
 		// source = nullptr ;
 	}
 
-	void clearFileSystem(Node* node )
+	void saveStateHelper( Node *& source , ofstream & file , const std :: string & path )
 	{
-		for ( auto & entry : node->children )
-		{
-			clearFileSystem( entry.second ) ;
-		}
+		if ( !source )
+			return ;
 
-		delete node ;
+		file << path << source->name << " " << (source->is_directory ? "directory" : "file" ) << std :: endl ;
+
+		for ( auto & child : source -> children )
+		{
+			saveStateHelper( child.second , file ,  path + source->name + (path.empty() ? "" : "/" ) ) ;
+		}
 	}
 
 public:
@@ -169,10 +172,10 @@ public:
 	}
 
 	~FileSystem() {
-		clearFileSystem( root ) ;
+		deleteNode( root ) ;
 	}
 
-	void setCurrentPath( const string & path )
+	void setCurrentPath( const std :: string & path )
 	{
 		if ( path == "" )
 		{
@@ -184,7 +187,7 @@ public:
 		}
 		else if ( path == ".." )
 		{
-			size_t index = current_path.find_last_of('/') ;
+			std :: size_t index = current_path.find_last_of('/') ;
 
 			if ( index != string :: npos )
 				current_path.erase( index  ) ;
@@ -194,12 +197,12 @@ public:
 		}
 	}
 
-	string currentDirectory()
+	std :: string currentDirectory()
 	{
 		return current_path.empty() ? "/" : current_path ;
 	}
 
-	void mkdir( const string & name )
+	void mkdir( const std :: string & name )
 	{
 		try {
 			if ( current_directory->children.find(name) != current_directory->children.end() )
@@ -209,12 +212,12 @@ public:
 
 			current_directory->children[name] = new_directory ;
 		}
-		catch ( exception & e ) {
-			cerr << "Exception : " << e.what() << endl  ;
+		catch ( std :: exception & e ) {
+			std :: cerr << "Exception : " << e.what() << std :: endl  ;
 		}
 	}
 
-	void cd( const string & path ) {
+	void cd( const std :: string & path ) {
 
 		if ( path.empty() ) {
 			return ;
@@ -238,14 +241,14 @@ public:
 
 				current_directory = target_directory ;
 			}
-			catch ( exception & e )
+			catch ( std :: exception & e )
 			{
-				cerr << "Exception : " << e.what() << endl ;
+				std :: cerr << "Exception : " << e.what() << std :: endl ;
 			}
 		}
 	}
 
-	void ls( const string & path = "" )
+	void ls( const std :: string & path = "" )
 	{
 		Node * target_directory  ;
 
@@ -263,15 +266,15 @@ public:
 			for ( auto & entry : target_directory->children ) {
 				cout << entry.first << ' ' ;
 			}
-			cout << endl ;
+			std :: cout << std :: endl ;
 		}
 		catch ( exception & e )
 		{
-			cerr << "Exception : " << e.what() << endl ;
+			std :: cerr << "Exception : " << e.what() << std :: endl ;
 		}
 	}
 
-	void touch(const string & file_name )
+	void touch(const std :: string & file_name )
 	{
 		if ( file_name.empty() )
 		{
@@ -292,7 +295,7 @@ public:
 		}
 	}
 
-	void mv( const string & source , const string & destination )
+	void mv( const std :: string & source , const std :: string & destination )
 	{
 		try {
 
@@ -317,7 +320,7 @@ public:
 			Node * source_parent = getParent( root , source_node ) ;
 			source_parent->children.erase( source_node-> name ) ;
 
-			cout << source << " Moved to " << destination << endl ;
+			std :: cout << source << " Moved to " << destination <<  std :: endl ;
 		}
 		catch ( std :: exception & e )
 		{
@@ -325,7 +328,7 @@ public:
 		}
 	}
 
-	void cp( const string & source , const string & destination )
+	void cp( const std :: string & source , const std :: string & destination )
 	{
 		try {
 
@@ -347,7 +350,7 @@ public:
 
 			if ( root == source_node ) return ;
 
-			cout << source << " Copied to " << destination << endl ;
+			std :: cout << source << " Copied to " << destination << std :: endl ;
 		}
 		catch ( std :: exception & e )
 		{
@@ -379,14 +382,14 @@ public:
 		}
 		catch ( std :: exception & e )
 		{
-			std :: cerr << "Error : " << e.what() << endl ;
+			std :: cerr << "Error : " << e.what() << std :: endl ;
 		}
 	}
 
 
-	vector< string > splitString( const string & input ) const {
+	vector< std :: string > splitString( const std :: string & input ) const {
 
-		std::vector<string> tokens ;
+		std :: vector< std :: string > tokens ;
 
 		std :: stringstream iss( input ) ;
 
@@ -399,6 +402,24 @@ public:
 
 		return tokens ;
 	}
+	void saveState( const std :: string & file_path )
+	{
+		try {
+			ofstream file( file_path ) ;
+
+			if ( !file.is_open() )
+				throw runtime_error("Error opening file for saving") ;
+
+			saveStateHelper( root , file , "" ) ;
+
+			std :: cout << "Saved successfully" << std :: endl ;
+			file.close() ;
+		}
+		catch ( std :: exception & e )
+		{
+			std :: cerr << e.what() << std :: endl ;
+		}
+	}
 
 };
 
@@ -409,15 +430,15 @@ int main()
 
 	while (1) {
 
-		cout << "C:" << file.currentDirectory() << "$ " ;
+		std :: cout << "C:" << file.currentDirectory() << " > " ;
 
-		string command ;
-		getline( cin , command ) ;
+		std :: string command ;
+		getline( std :: cin , command ) ;
 
 		if ( command == "" )
 			continue ;
 
-		std::vector< string > tokens = file.splitString( command ) ;
+		std :: vector< std :: string > tokens = file.splitString( command ) ;
 
 		string operation = tokens.front() ;
 		tokens.erase( tokens.begin() ) ;
@@ -452,8 +473,13 @@ int main()
 		{
 			file.rm( tokens[0] ) ;
 		}
-		else {
-			cout << "Invalid command " << endl ;
+		else if ( operation == "save" && tokens.size() == 1 )
+		{
+			file.saveState( tokens[0] ) ;
+		}
+		else
+		{
+			std :: cout << "Invalid command " << std :: endl ;
 		}
 
 
