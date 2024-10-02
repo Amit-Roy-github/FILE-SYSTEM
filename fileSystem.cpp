@@ -123,6 +123,19 @@ private:
 		return current ;
 
 	}
+
+	Node * copyNode( Node * source )
+	{
+		Node * new_node = new Node( source -> name , source -> is_directory ) ;
+
+		for ( auto &  child : source -> children )
+		{
+			new_node -> children[child.first] = copyNode( child.second ) ;
+		}
+
+		return new_node ;
+	}
+
 	void clearFileSystem(Node* node )
 	{
 		for ( auto & entry : node->children )
@@ -277,19 +290,13 @@ public:
 			Node * destination_node = findNode( destination ) ;
 
 			if ( !destination_node )
-				throw runtime_error("Destination Node Found") ;
+				throw runtime_error("Destination Not Found") ;
 
 			if ( destination_node->children.count( source_node->name ) )
-				throw runtime_error("Destination already a node with the same name") ;
+				throw runtime_error("Destination already contains a node with the same name") ;
 
 
 			destination_node -> children [ source_node->name ] = source_node  ;
-
-			cout << destination_node->name << ' ' << source_node->name << endl ;
-			for ( auto i : destination_node->children )
-			{
-				cout << i.first << endl ;
-			}
 
 			if ( root == source_node ) return ;
 
@@ -303,6 +310,37 @@ public:
 			std :: cerr << "Error : " << e.what() << std :: endl ;
 		}
 	}
+
+	void cp( const string & source , const string & destination )
+	{
+		try {
+
+			Node * source_node = findNode( source ) ;
+
+			if ( !source_node )
+				throw runtime_error("Source Not Found") ;
+
+			Node * destination_node = findNode( destination ) ;
+
+			if ( !destination_node )
+				throw runtime_error("Destination Not Found") ;
+
+			if ( destination_node->children.count( source_node->name ) )
+				throw runtime_error("Destination already contains a node with the same name") ;
+
+
+			destination_node -> children [ source_node->name ] = copyNode(source_node)  ;
+
+			if ( root == source_node ) return ;
+
+			cout << source << " Copied to " << destination << endl ;
+		}
+		catch ( std :: exception & e )
+		{
+			std :: cerr << "Error : " << e.what() << std :: endl ;
+		}
+	}
+
 
 	vector< string > splitString( const string & input ) const {
 
@@ -363,6 +401,10 @@ int main()
 		else if ( operation == "mv" && tokens.size() == 2 )
 		{
 			file.mv( tokens[0] , tokens[1] ) ;
+		}
+		else if ( operation == "cp" && tokens.size() == 2 )
+		{
+			file.cp( tokens[0] , tokens[1] ) ;
 		}
 		else {
 			cout << "Invalid command " << endl ;
