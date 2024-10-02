@@ -34,10 +34,14 @@ private:
 
 		while ( (end = path.find('/' , start )  ) != std :: string :: npos )
 		{
-			result.push_back( path.substr( start , end - start  ) ) ;
+			if ( start != end )
+				result.push_back( path.substr( start , end - start  ) ) ;
+
 			start = end + 1 ;
 		}
-		result.push_back( path.substr(start) ) ;
+
+		if ( start != (size_t) path.size() )
+			result.push_back( path.substr(start) ) ;
 
 		return result ;
 	}
@@ -160,6 +164,64 @@ private:
 		for ( auto & child : source -> children )
 		{
 			saveStateHelper( child.second , file ,  path + source->name + (path.empty() ? "" : "/" ) ) ;
+		}
+	}
+
+	void mkdirFromPath( const std :: string & path )
+	{
+		Node * current = root ;
+		std :: vector< std :: string > components = splitPath( path ) ;
+
+		for ( auto &component : components )
+		{
+			if ( current->children.find( component ) == current->children.end() )
+			{
+				current -> children[component] = new Node(component , true ) ;
+			}
+			current = current->children[component] ;
+		}
+	}
+
+	void touchFromPath ( const std :: string & path )
+	{
+		Node * current = root ;
+		std :: vector< std :: string > components = splitPath( path ) ;
+
+		for ( size_t i = 0 ; i < components.size() - 1 ; i++ )
+		{
+			current = current->children[ components[i] ] ;
+		}
+
+		current->children[components.back()] = new Node( components.back() , false ) ;
+	}
+
+	void loadStateHelper( ifstream & file) {
+
+		deleteNode( root ) ;
+
+		root = new Node("/" , true ) ;
+		current_directory = root ;
+		current_path = "" ;
+
+		std :: string line ;
+
+		while ( std :: getline( file , line ) )
+		{
+			std :: istringstream  iss( line ) ;
+
+			std :: string full_path ;
+			std :: string type ;
+
+			iss >> full_path >> type ;
+
+			if ( type == "directory" )
+			{
+				mkdirFromPath( full_path ) ;
+			}
+			else
+			{
+				touchFromPath( full_path ) ;
+			}
 		}
 	}
 
@@ -387,7 +449,7 @@ public:
 	}
 
 
-	vector< std :: string > splitString( const std :: string & input ) const {
+	std :: vector< std :: string > splitString( const std :: string & input ) const {
 
 		std :: vector< std :: string > tokens ;
 
@@ -402,10 +464,11 @@ public:
 
 		return tokens ;
 	}
+
 	void saveState( const std :: string & file_path )
 	{
 		try {
-			ofstream file( file_path ) ;
+			std :: ofstream file( file_path ) ;
 
 			if ( !file.is_open() )
 				throw runtime_error("Error opening file for saving") ;
@@ -421,6 +484,22 @@ public:
 		}
 	}
 
+	void loadState( const std :: string & file_path )
+	{
+		try {
+			std :: ifstream file( file_path ) ;
+
+			if ( !file.is_open() )
+				throw runtime_error("Error opening file for loading:") ;
+
+			loadStateHelper( file ) ;
+			std :: cout << "Loaded successfully " << std :: endl ;
+		}
+		catch ( std :: exception & e )
+		{
+			std :: cerr << e.what() << std :: endl ;
+		}
+	}
 };
 
 int main()
@@ -449,9 +528,13 @@ int main()
 		{
 			break ;
 		}
-		else if ( operation == "mk" && tokens.size() == 1 )
+		else if ( operation == "mkdir" && tokens.size() == 1 )
 		{
 			file.mkdir( tokens[0] ) ;
+		}
+		else if ( operation == "touch" && tokens.size() == 1 )
+		{
+			file.touch( tokens[0] );
 		}
 		else if ( operation == "cd"  )
 		{
@@ -476,6 +559,10 @@ int main()
 		else if ( operation == "save" && tokens.size() == 1 )
 		{
 			file.saveState( tokens[0] ) ;
+		}
+		else if ( operation == "load" && tokens.size() == 1 )
+		{
+			file.loadState( tokens[0] ) ;
 		}
 		else
 		{
