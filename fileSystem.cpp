@@ -11,17 +11,16 @@ using namespace std ;
 
 class FileSystem {
 private:
-
 	struct Node {
 
-		string name ;
 		bool is_directory ;
-		map< string , Node* > children ;
+		std :: string name ;
+		std :: map< string , Node* > children ;
 
 		Node(const std :: string & name , bool isDir = false ) : name(name) , is_directory(isDir) {}
 	};
 
-	string current_path ;
+	std :: string current_path ;
 	Node * root ;
 	Node * current_directory ;
 
@@ -43,7 +42,7 @@ private:
 		return result ;
 	}
 
-	Node * getParent( Node * current , Node * node  ) const
+	Node * getParent( Node *& current , Node *& node  ) const
 	{
 		if ( current == node )
 		{
@@ -72,7 +71,6 @@ private:
 
 	Node * findNode( const string & path )
 	{
-
 		if ( path.empty() || path.front() == '/' )
 			return nullptr ;
 
@@ -124,7 +122,7 @@ private:
 
 	}
 
-	Node * copyNode( Node * source )
+	Node * copyNode( Node *& source )
 	{
 		Node * new_node = new Node( source -> name , source -> is_directory ) ;
 
@@ -134,6 +132,22 @@ private:
 		}
 
 		return new_node ;
+	}
+
+	void deleteNode( Node *& source )
+	{
+		if ( !source )
+			return ;
+
+		for ( auto & child : source -> children )
+		{
+			deleteNode( child.second ) ;
+		}
+
+		source -> children.clear() ;
+
+		delete source ;
+		// source = nullptr ;
 	}
 
 	void clearFileSystem(Node* node )
@@ -179,6 +193,7 @@ public:
 			current_path = current_path + "/" +  path ;
 		}
 	}
+
 	string currentDirectory()
 	{
 		return current_path.empty() ? "/" : current_path ;
@@ -200,7 +215,6 @@ public:
 	}
 
 	void cd( const string & path ) {
-
 
 		if ( path.empty() ) {
 			return ;
@@ -341,6 +355,34 @@ public:
 		}
 	}
 
+	void rm( const std :: string & name ) {
+
+		try {
+			Node * target = findNode( name ) ;
+
+			if ( !target )
+				throw runtime_error("Path Not Found") ;
+
+			Node * parent = getParent( root , target ) ;
+
+
+			if ( parent == target )
+				throw runtime_error("Could not remove") ;
+
+			if ( parent->children.count(target->name) )
+				parent->children.erase(target->name) ;
+
+			deleteNode( target ) ;
+
+			std :: cout << name << " Has been deleted " << std :: endl  ;
+
+		}
+		catch ( std :: exception & e )
+		{
+			std :: cerr << "Error : " << e.what() << endl ;
+		}
+	}
+
 
 	vector< string > splitString( const string & input ) const {
 
@@ -386,7 +428,7 @@ int main()
 		{
 			break ;
 		}
-		else if ( operation == "mkdir" && tokens.size() == 1 )
+		else if ( operation == "mk" && tokens.size() == 1 )
 		{
 			file.mkdir( tokens[0] ) ;
 		}
@@ -405,6 +447,10 @@ int main()
 		else if ( operation == "cp" && tokens.size() == 2 )
 		{
 			file.cp( tokens[0] , tokens[1] ) ;
+		}
+		else if ( operation == "rm" && tokens.size() == 1 )
+		{
+			file.rm( tokens[0] ) ;
 		}
 		else {
 			cout << "Invalid command " << endl ;
