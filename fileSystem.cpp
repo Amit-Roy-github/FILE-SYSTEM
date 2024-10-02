@@ -25,8 +25,10 @@ private:
 	Node * root ;
 	Node * current_directory ;
 
-	vector< string > splitPath( const string & path )
+	vector< string > splitPath( const string & path ) const
 	{
+		if ( path.empty() ) return {} ;
+
 		std::vector<string> result ;
 
 		size_t  start = 0 , end = 0 ;
@@ -41,7 +43,7 @@ private:
 		return result ;
 	}
 
-	Node * getParent( Node * current , Node * node  )
+	Node * getParent( Node * current , Node * node  ) const
 	{
 		if ( current == node )
 		{
@@ -68,6 +70,32 @@ private:
 		return nullptr ;
 	}
 
+	Node * findNode( const string & path )
+	{
+
+		if ( path.empty() || path.front() == '/' )
+			return nullptr ;
+
+		Node * current = current_directory ;
+		std::vector<string> components = splitPath( path ) ;
+
+		for ( auto & component : components )
+		{
+			if ( component == ".." )
+			{
+				current = getParent( root , current ) ;
+			}
+			else if ( current->children.count( component ) )
+			{
+				current = current->children[component] ;
+			}
+			else if ( component != "/" )
+			{
+				return nullptr ;
+			}
+		}
+		return current ;
+	}
 
 	Node * findDirectory( const string & path )
 	{
@@ -87,7 +115,7 @@ private:
 				current = current->children[component] ;
 				setCurrentPath(component) ;
 			}
-			else {
+			else if ( component != "." ) {
 				return nullptr ;
 			}
 		}
@@ -216,6 +244,66 @@ public:
 		}
 	}
 
+	void touch(const string & file_name )
+	{
+		if ( file_name.empty() )
+		{
+			return ;
+		}
+		else {
+
+			if ( current_directory->children.count( file_name ) )
+			{
+				cout << file_name << " file Already Exist" << endl ;
+			}
+			else
+			{
+				Node * new_file = new Node(file_name , false ) ;
+
+				current_directory -> children[file_name] = new_file ;
+			}
+		}
+	}
+
+	void mv( const string & source , const string & destination )
+	{
+		try {
+
+			Node * source_node = findNode( source ) ;
+
+			if ( !source_node )
+				throw runtime_error("Source Not Found") ;
+
+			Node * destination_node = findNode( destination ) ;
+
+			if ( !destination_node )
+				throw runtime_error("Destination Node Found") ;
+
+			if ( destination_node->children.count( source_node->name ) )
+				throw runtime_error("Destination already a node with the same name") ;
+
+
+			destination_node -> children [ source_node->name ] = source_node  ;
+
+			cout << destination_node->name << ' ' << source_node->name << endl ;
+			for ( auto i : destination_node->children )
+			{
+				cout << i.first << endl ;
+			}
+
+			if ( root == source_node ) return ;
+
+			Node * source_parent = getParent( root , source_node ) ;
+			source_parent->children.erase( source_node-> name ) ;
+
+			cout << source << " Moved to " << destination << endl ;
+		}
+		catch ( std :: exception & e )
+		{
+			std :: cerr << "Error : " << e.what() << std :: endl ;
+		}
+	}
+
 	vector< string > splitString( const string & input ) const {
 
 		std::vector<string> tokens ;
@@ -260,7 +348,7 @@ int main()
 		{
 			break ;
 		}
-		else if ( operation == "mkdir" )
+		else if ( operation == "mkdir" && tokens.size() == 1 )
 		{
 			file.mkdir( tokens[0] ) ;
 		}
@@ -271,6 +359,10 @@ int main()
 		else if ( operation == "ls" )
 		{
 			file.ls( tokens.size() ? tokens[0] : "" ) ;
+		}
+		else if ( operation == "mv" && tokens.size() == 2 )
+		{
+			file.mv( tokens[0] , tokens[1] ) ;
 		}
 		else {
 			cout << "Invalid command " << endl ;
