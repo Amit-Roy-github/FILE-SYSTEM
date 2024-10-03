@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
+#include <cstdlib> // for system()
 
 
 using namespace std ;
@@ -544,6 +545,54 @@ public:
 		}
 	}
 
+	void openFile( const std :: string & file_name ) {
+
+		try {
+			Node * file = findNode( file_name ) ;
+
+			if ( !file || file->is_directory )
+				throw std :: runtime_error("File not found or it is a directory ") ;
+
+			// Platform-specific command to open the file
+			// #if defined(_WIN32) || defined(_WIN64)
+			//     command = "start " + file_name;
+			// #elif defined(__APPLE__)
+			//     command = "open " + file_name;
+			// #elif defined(__linux__)
+			//     command = "xdg-open " + file_name;
+			// #else
+			//     throw std::runtime_error("Unsupported platform");
+			// #endif
+
+			std :: string command = "notepad.exe " + file_name ;
+			int result = system( command.c_str() ) ;
+
+			if ( result != 0 )
+			{
+				throw std :: runtime_error("Failed to open file in editor") ;
+			}
+
+			// Wait until the user finishes editing (after closing the editor)
+			std :: cout << "Please edit the file and save changes." << std :: endl;
+
+			std :: ifstream ifs( file_name ) ; // this will create or system file
+
+			if ( !ifs.is_open() ) {
+				throw std :: runtime_error("Could not open file after editing") ;
+			}
+
+			std :: string new_content((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+			ifs.close() ;
+
+			createVersion( file , new_content) ;
+			std :: cout << "Changed saved to " << file_name << std :: endl ;
+		}
+		catch ( std :: exception & e )
+		{
+			std :: cerr << e.what() << endl ;
+		}
+	}
+
 	std :: vector< std :: string > splitString( const std :: string & input ) const {
 
 		std :: vector< std :: string > tokens ;
@@ -631,6 +680,10 @@ int main()
 		else if ( operation == "revertversion" && tokens.size() == 1 )
 		{
 			file.rollBack( tokens[0] , stoi( tokens[1]) ) ;
+		}
+		else if ( operation == "open" )
+		{
+			file.openFile( tokens[0] ) ;
 		}
 		else
 		{
