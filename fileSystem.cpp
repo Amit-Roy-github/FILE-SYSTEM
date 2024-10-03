@@ -16,6 +16,7 @@ private:
 		bool is_directory ;
 		std :: string name ;
 		std :: map< std :: string , Node* > children ;
+		std :: vector < std :: string > versions ;
 
 		Node(const std :: string & name , bool isDir = false ) : name(name) , is_directory(isDir) {}
 	};
@@ -225,6 +226,14 @@ private:
 		}
 	}
 
+	void createVersion( Node *& file , const std :: string & content )
+	{
+		if ( !file-> is_directory )
+		{
+			file -> versions.push_back( content ) ;
+		}
+	}
+
 public:
 
 	FileSystem() {
@@ -336,24 +345,34 @@ public:
 		}
 	}
 
-	void touch(const std :: string & file_name )
+	void touch(const std :: string & file_name , const std :: string & content = "" )
 	{
-		if ( file_name.empty() )
-		{
-			return ;
-		}
-		else {
+		try {
 
-			if ( current_directory->children.count( file_name ) )
+			if ( current_directory->children.find(file_name) != current_directory->children.end() )
 			{
-				cout << file_name << " file Already Exist" << endl ;
+				Node * file = current_directory->children[file_name] ;
+
+				if ( !file->is_directory) {
+					createVersion( file , content ) ;
+					std :: cout << "File " << file_name << " modified" << std :: endl ;
+				}
+				else
+				{
+					throw runtime_error("A directory with same name exits") ;
+				}
 			}
-			else
-			{
-				Node * new_file = new Node(file_name , false ) ;
-
+			else {
+				Node * new_file = new Node( file_name , false ) ;
+				new_file -> versions.push_back( content ) ;
 				current_directory -> children[file_name] = new_file ;
+
+				std :: cout << "File " << file_name << " created" << std :: endl ;
 			}
+		}
+		catch ( std :: exception & e )
+		{
+			std :: cerr << e.what() << std :: endl  ;
 		}
 	}
 
@@ -448,23 +467,6 @@ public:
 		}
 	}
 
-
-	std :: vector< std :: string > splitString( const std :: string & input ) const {
-
-		std :: vector< std :: string > tokens ;
-
-		std :: stringstream iss( input ) ;
-
-		std :: string token ;
-
-		while ( iss >> token )
-		{
-			tokens.push_back( token ) ;
-		}
-
-		return tokens ;
-	}
-
 	void saveState( const std :: string & file_path )
 	{
 		try {
@@ -500,6 +502,64 @@ public:
 			std :: cerr << e.what() << std :: endl ;
 		}
 	}
+
+	void lsVersions( const std :: string & file_name )
+	{
+		try {
+			Node * file = findNode( file_name ) ;
+
+			if ( !file || file->is_directory )
+				throw runtime_error("File not found or it is a directory") ;
+
+			for ( size_t i = 0 ; i < file->versions.size() ; i++ )
+			{
+				std :: cout << "Version " << i + 1 << ": " << file->versions[i] << std :: endl ;
+			}
+		}
+		catch ( std :: exception & e )
+		{
+			std :: cerr << e.what() << std :: endl ;
+		}
+	}
+
+	void rollBack( const std :: string & file_name , const int version )
+	{
+
+		try {
+			Node * file = findNode( file_name ) ;
+
+			if ( !file || file -> is_directory ) {
+				throw runtime_error("File not found or it is a directory") ;
+			}
+
+			if ( version > 0 && version <= file -> versions.size() ) {
+				std :: cout << "Rolling back " << file_name << " to version " << version << ": " << file->versions[version - 1] << std :: endl ;
+			}
+			else {
+				throw runtime_error("Version number is out of range") ;
+			}
+		}
+		catch ( std :: exception & e ) {
+			std :: cerr << e.what() << std :: endl ;
+		}
+	}
+
+	std :: vector< std :: string > splitString( const std :: string & input ) const {
+
+		std :: vector< std :: string > tokens ;
+
+		std :: stringstream iss( input ) ;
+
+		std :: string token ;
+
+		while ( iss >> token )
+		{
+			tokens.push_back( token ) ;
+		}
+
+		return tokens ;
+	}
+
 };
 
 int main()
@@ -532,9 +592,9 @@ int main()
 		{
 			file.mkdir( tokens[0] ) ;
 		}
-		else if ( operation == "touch" && tokens.size() == 1 )
+		else if ( operation == "touch" && tokens.size() >= 1 )
 		{
-			file.touch( tokens[0] );
+			file.touch( tokens[0] , tokens.size() > 1 ? tokens[1] : "" );
 		}
 		else if ( operation == "cd"  )
 		{
@@ -563,6 +623,14 @@ int main()
 		else if ( operation == "load" && tokens.size() == 1 )
 		{
 			file.loadState( tokens[0] ) ;
+		}
+		else if ( operation == "lsversion" && tokens.size() == 1 )
+		{
+			file.lsVersions( tokens[0] );
+		}
+		else if ( operation == "revertversion" && tokens.size() == 1 )
+		{
+			file.rollBack( tokens[0] , stoi( tokens[1]) ) ;
 		}
 		else
 		{
