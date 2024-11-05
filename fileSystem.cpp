@@ -7,20 +7,17 @@
 #include <cstdlib> // for system()
 
 
-using namespace std ;
+struct Node {
+	bool is_directory ;
+	std :: string name ;
+	std :: map< std :: string , Node* > children ;
+	std :: vector < std :: string > versions ;
 
+	Node(const std :: string & name , bool isDir = false ) : name(name) , is_directory(isDir) {}
+};
 
 class FileSystem {
 private:
-	struct Node {
-
-		bool is_directory ;
-		std :: string name ;
-		std :: map< std :: string , Node* > children ;
-		std :: vector < std :: string > versions ;
-
-		Node(const std :: string & name , bool isDir = false ) : name(name) , is_directory(isDir) {}
-	};
 
 	std :: string current_path ;
 	Node * root ;
