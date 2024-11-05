@@ -33,7 +33,7 @@ The file system is implemented using the following data structures :
 
 ## Design Decisions 
 
-1. ##File System Structures**
+1. **File System Structures**
    - Hierarchical tree structures to represent directories and files.
    - Root node serves as the starting point for the entire file system.
 
@@ -57,3 +57,25 @@ The file system is implemented using the following data structures :
 6. **Save and Load State (Bonus):**
    - Implemented functionality to save and load the file system state.
    - Recursive approach to traverse the file system hierarchy during save and load operations.
+
+
+### Setup and Running Instructions
+
+1. **Requirements:**
+   - C++ compiler installed.
+  
+2. **Compilation:**
+   - Compile the code using a C++ compiler. For example:
+     ```bash
+     g++ assignment.cpp -o test
+     ```
+3. **Execution:**
+   - Run the compiled executable:
+     ```bash
+     .\test.exe
+     ```
+   - This will start the interactive file system shell.
+
+4. **Commands:**
+   - Use commands such as `mkdir`, `ls`, `cd`, `touch`, `mv`, `cp`, `rm`, `save`, `load`, and `exit` to interact with the file system.
+
